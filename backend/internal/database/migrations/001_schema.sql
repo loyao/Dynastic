@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS emperor (
     posthumous_name VARCHAR(128) NOT NULL DEFAULT '' COMMENT '谥号',
     era_names       VARCHAR(255) NOT NULL DEFAULT '' COMMENT '年号',
     father_id       BIGINT       NULL COMMENT '父帝 id，自引用',
+    lineage_id      BIGINT       NULL COMMENT '世系上游帝王 id：生父非皇帝时，指向最近的帝王祖先（如曾祖），用于绘制隔代/旁系世系连线',
     order_index     INT          NOT NULL DEFAULT 0 COMMENT '在位顺序',
     relation_note   VARCHAR(128) NOT NULL DEFAULT '' COMMENT '继位关系说明',
     reign_start     INT          NULL COMMENT '在位起始年，负数为公元前',
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS emperor (
     PRIMARY KEY (id),
     KEY idx_emperor_dynasty (dynasty_id),
     KEY idx_emperor_father (father_id),
+    KEY idx_emperor_lineage (lineage_id),
     KEY idx_emperor_order (dynasty_id, order_index),
     CONSTRAINT fk_emperor_dynasty FOREIGN KEY (dynasty_id) REFERENCES dynasty (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
