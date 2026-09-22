@@ -65,9 +65,9 @@ func migrate(db *sql.DB, dbName string) error {
 	}
 	log.Printf("已执行迁移: migrations/001_schema.sql")
 
-	// 兼容早期已建库但缺少 lineage_id 列的情况。
-	if err := ensureColumn(db, dbName, "emperor", "lineage_id",
-		"BIGINT NULL COMMENT '世系上游帝王 id' AFTER father_id"); err != nil {
+	// 兼容早期已建库但缺少 is_emperor 列的情况（旧数据默认视为皇帝）。
+	if err := ensureColumn(db, dbName, "emperor", "is_emperor",
+		"TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1=皇帝，0=宗室/未即位祖先' AFTER dynasty_id"); err != nil {
 		return err
 	}
 

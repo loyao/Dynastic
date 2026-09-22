@@ -14,12 +14,13 @@ export interface Emperor {
   id: number
   dynastyId: number
   dynastyName?: string
+  /** true=皇帝；false=宗室/未即位祖先（如戾太子、史皇孙） */
+  isEmperor: boolean
   name: string
   templeName: string
   posthumousName: string
   eraNames: string
   fatherId: number | null
-  lineageId: number | null
   orderIndex: number
   relationNote: string
   reignStart: number | null
@@ -30,8 +31,8 @@ export interface Emperor {
 }
 
 export interface TreeNode extends Emperor {
-  /** 与父节点的连接方式：father=实线父子，lineage=虚线隔代/旁系，空=根节点 */
-  edgeType: 'father' | 'lineage' | ''
+  /** 与父节点的连接方式：father=实线血脉，空=根节点 */
+  edgeType: 'father' | ''
   children: TreeNode[]
 }
 
@@ -49,11 +50,4 @@ export function formatYear(year: number | null | undefined): string {
 /** 生成“前221 — 前207”这类年份区间文本。 */
 export function formatRange(start: number | null, end: number | null): string {
   return `${formatYear(start)} — ${formatYear(end)}`
-}
-
-/** 从关系说明中提取简短标签，用于图谱连线（取“（”“，”等之前的部分）。 */
-export function shortRelation(note: string): string {
-  if (!note) return '世系'
-  const cut = note.split(/[（(，,]/)[0].trim()
-  return cut || '世系'
 }

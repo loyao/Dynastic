@@ -23,16 +23,16 @@ function toStr(v: number | null | undefined): string {
   return v === null || v === undefined ? '' : String(v)
 }
 
-/** 帝王新增/编辑表单。可在同一弹框内选择所属朝代、父帝与世系上游帝王。 */
+/** 人物新增/编辑表单。可在同一弹框内选择所属朝代、身份与父系（直接血缘）。 */
 export default function EmperorForm({ initial, defaultDynastyId, dynasties, onClose, onSubmit }: Props) {
   const [dynastyId, setDynastyId] = useState<number>(initial?.dynastyId ?? defaultDynastyId)
+  const [isEmperor, setIsEmperor] = useState<boolean>(initial?.isEmperor ?? true)
   const [name, setName] = useState(initial?.name ?? '')
   const [templeName, setTempleName] = useState(initial?.templeName ?? '')
   const [posthumousName, setPosthumousName] = useState(initial?.posthumousName ?? '')
   const [eraNames, setEraNames] = useState(initial?.eraNames ?? '')
   const [orderIndex, setOrderIndex] = useState(toStr(initial?.orderIndex))
   const [fatherId, setFatherId] = useState(toStr(initial?.fatherId))
-  const [lineageId, setLineageId] = useState(toStr(initial?.lineageId))
   const [relationNote, setRelationNote] = useState(initial?.relationNote ?? '')
   const [reignStart, setReignStart] = useState(toStr(initial?.reignStart))
   const [reignEnd, setReignEnd] = useState(toStr(initial?.reignEnd))
@@ -46,7 +46,7 @@ export default function EmperorForm({ initial, defaultDynastyId, dynasties, onCl
 
   const isEdit = initial !== null
 
-  // 朝代变化时，加载该朝代帝王作为「父帝 / 世系上游」候选。
+  // 朝代变化时，加载该朝代全部人物作为「父系」候选（含皇帝与非皇帝祖先）。
   useEffect(() => {
     let alive = true
     api
@@ -68,13 +68,8 @@ export default function EmperorForm({ initial, defaultDynastyId, dynasties, onCl
       return
     }
     const fid = toNullableInt(fatherId)
-    const lid = toNullableInt(lineageId)
-    if (fid !== null && lid !== null) {
-      setError('「父帝」与「世系上游」二选一：有直接父帝时留空世系上游')
-      return
-    }
-    if (isEdit && (fid === initial.id || lid === initial.id)) {
-      setError('父帝/世系上游不能指向自己')
+    if (isEdit && fid === initial.id) {
+      setError('父系不能指向自己')
       return
     }
     setSaving(true)
@@ -83,16 +78,16 @@ export default function EmperorForm({ initial, defaultDynastyId, dynasties, onCl
       await onSubmit({
         id: initial?.id,
         dynastyId,
+        isEmperor,
         name: name.trim(),
         templeName: templeName.trim(),
         posthumousName: posthumousName.trim(),
         eraNames: eraNames.trim(),
         fatherId: fid,
-        lineageId: lid,
-        orderIndex: toNullableInt(orderIndex) ?? 0,
+        orderIndex: isEmperor ? toNullableInt(orderIndex) ?? 0 : 0,
         relationNote: relationNote.trim(),
-        reignStart: toNullableInt(reignStart),
-        reignEnd: toNullableInt(reignEnd),
+        reignStart: isEmperor ? toNullableInt(reignStart) : null,
+        reignEnd: isEmperor ? toNullableInt(reignEnd) : null,
         birthYear: toNullableInt(birthYear),
         deathYear: toNullableInt(deathYear),
         description: description.trim(),
@@ -106,11 +101,13 @@ export default function EmperorForm({ initial, defaultDynastyId, dynasties, onCl
   // 候选帝王下拉项（编辑时排除自己）
   const options = candidates.filter((c) => !isEdit || c.id !== initial.id)
   const optionLabel = (e: Emperor) =>
-    `${e.orderIndex}. ${e.templeName || e.posthumousName || e.name}（${e.name}）`
+    `${e.isEmperor === false ? '〔宗室〕' : `${e.orderIndex}. `}${
+      e.templeName || e.posthumousName || e.name
+    }（${e.name}）`
 
   return (
     <Modal
-      title={isEdit ? `编辑帝王 · ${initial.name}` : '新增帝王'}
+      title={isEdit ? `编辑人物 · ${initial.name}` : '新增人物'}
       onClose={onClose}
       footer={
         <>
@@ -134,9 +131,30 @@ export default function EmperorForm({ initial, defaultDynastyId, dynasties, onCl
         </select>
       </div>
       <div className="field">
-        <label>在位顺序</label>
-        <input value={orderIndex} onChange={(e) => setOrderIndex(e.target.value)} placeholder="如 7" />
+        <label>身份 *</label>
+        <div className="seg">
+          <button
+            type="button"
+            className={isEmperor ? 'seg-btn active' : 'seg-btn'}
+            onClick={() => setIsEmperor(true)}
+          >
+            皇帝
+          </button>
+          <button
+            type="button"
+            className={!isEmperor ? 'seg-btn active' : 'seg-btn'}
+            onClick={() => setIsEmperor(false)}
+          >
+            宗室 · 未即位
+          </button>
+        </div>
       </div>
+      {isEmperor ? (
+        <div className="field">
+          <label>在位顺序</label>
+          <input value={orderIndex} onChange={(e) => setOrderIndex(e.target.value)} placeholder="如 7" />
+        </div>
+      ) : null}
 
       <div className="field">
         <label>姓名 *</label>
@@ -159,28 +177,19 @@ export default function EmperorForm({ initial, defaultDynastyId, dynasties, onCl
         <input value={eraNames} onChange={(e) => setEraNames(e.target.value)} placeholder="如：本始" />
       </div>
 
-      <div className="field">
-        <label>父帝（直接父子）</label>
+      <div className="field full">
+        <label>父帝 / 父系（直接血缘）</label>
         <select value={fatherId} onChange={(e) => setFatherId(e.target.value)}>
-          <option value="">— 无 / 生父非皇帝 —</option>
+          <option value="">— 无 / 不详（始祖或独立成系） —</option>
           {options.map((e) => (
             <option key={e.id} value={e.id}>
               {optionLabel(e)}
             </option>
           ))}
         </select>
-      </div>
-      <div className="field">
-        <label>世系上游（隔代/旁系）</label>
-        <select value={lineageId} onChange={(e) => setLineageId(e.target.value)}>
-          <option value="">— 无 —</option>
-          {options.map((e) => (
-            <option key={e.id} value={e.id}>
-              {optionLabel(e)}
-            </option>
-          ))}
-        </select>
-        <span className="hint-text">生父非皇帝时，指向最近的帝王祖先（如曾祖），图上以虚线标注</span>
+        <span className="hint-text">
+          可指向皇帝或非皇帝祖先（如戾太子、史皇孙、赵允让）；隔代/旁系关系会因中间祖先节点而在图上自然展现
+        </span>
       </div>
 
       <div className="field full">
@@ -194,11 +203,16 @@ export default function EmperorForm({ initial, defaultDynastyId, dynasties, onCl
 
       <div className="field">
         <label>在位起（年）</label>
-        <input value={reignStart} onChange={(e) => setReignStart(e.target.value)} placeholder="公元前填负数" />
+        <input
+          value={reignStart}
+          onChange={(e) => setReignStart(e.target.value)}
+          placeholder="公元前填负数"
+          disabled={!isEmperor}
+        />
       </div>
       <div className="field">
         <label>在位止（年）</label>
-        <input value={reignEnd} onChange={(e) => setReignEnd(e.target.value)} />
+        <input value={reignEnd} onChange={(e) => setReignEnd(e.target.value)} disabled={!isEmperor} />
       </div>
       <div className="field">
         <label>生年</label>

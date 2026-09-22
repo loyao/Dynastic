@@ -17,23 +17,25 @@ func New(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
-const emperorColumns = `e.id, e.dynasty_id, d.name, e.name, e.temple_name, e.posthumous_name,
-	e.era_names, e.father_id, e.lineage_id, e.order_index, e.relation_note,
+const emperorColumns = `e.id, e.dynasty_id, d.name, e.is_emperor, e.name, e.temple_name, e.posthumous_name,
+	e.era_names, e.father_id, e.order_index, e.relation_note,
 	e.reign_start, e.reign_end, e.birth_year, e.death_year, e.description`
 
-// scanEmperor 从查询行中读取一位帝王。
+// scanEmperor 从查询行中读取一位人物。
 func scanEmperor(row interface{ Scan(...any) error }) (model.Emperor, error) {
 	var e model.Emperor
 	var dynastyName sql.NullString
+	var isEmperor int
 	err := row.Scan(
-		&e.ID, &e.DynastyID, &dynastyName, &e.Name, &e.TempleName, &e.PosthumousName,
-		&e.EraNames, &e.FatherID, &e.LineageID, &e.OrderIndex, &e.RelationNote,
+		&e.ID, &e.DynastyID, &dynastyName, &isEmperor, &e.Name, &e.TempleName, &e.PosthumousName,
+		&e.EraNames, &e.FatherID, &e.OrderIndex, &e.RelationNote,
 		&e.ReignStart, &e.ReignEnd, &e.BirthYear, &e.DeathYear, &e.Description,
 	)
 	if err != nil {
 		return e, err
 	}
 	e.DynastyName = dynastyName.String
+	e.IsEmperor = isEmperor != 0
 	return e, err
 }
 
@@ -41,7 +43,7 @@ func scanEmperor(row interface{ Scan(...any) error }) (model.Emperor, error) {
 func (r *Repository) ListDynasties() ([]model.Dynasty, error) {
 	rows, err := r.db.Query(`
 		SELECT d.id, d.name, d.start_year, d.end_year, d.capital, d.description,
-		       (SELECT COUNT(*) FROM emperor e WHERE e.dynasty_id = d.id) AS emperor_count
+		       (SELECT COUNT(*) FROM emperor e WHERE e.dynasty_id = d.id AND e.is_emperor = 1) AS emperor_count
 		FROM dynasty d
 		ORDER BY d.sort_order ASC, d.id ASC`)
 	if err != nil {
@@ -65,7 +67,7 @@ func (r *Repository) GetDynasty(id int64) (*model.Dynasty, error) {
 	var d model.Dynasty
 	err := r.db.QueryRow(`
 		SELECT d.id, d.name, d.start_year, d.end_year, d.capital, d.description,
-		       (SELECT COUNT(*) FROM emperor e WHERE e.dynasty_id = d.id)
+		       (SELECT COUNT(*) FROM emperor e WHERE e.dynasty_id = d.id AND e.is_emperor = 1)
 		FROM dynasty d WHERE d.id = ?`, id).
 		Scan(&d.ID, &d.Name, &d.StartYear, &d.EndYear, &d.Capital, &d.Description, &d.EmperorCount)
 	if err == sql.ErrNoRows {
@@ -131,9 +133,8 @@ func (r *Repository) GetDynastyDetail(id int64) (*model.DynastyDetail, error) {
 	return &model.DynastyDetail{Dynasty: *d, Emperors: emperors}, nil
 }
 
-// BuildTree 依据父子与世系关系把扁平帝王列表组织成世系森林（可能有多个根）。
-// 连接优先级：father_id（实线父子）> lineage_id（虚线隔代/旁系）。
-// 两者都无法解析到集合内节点时（如始祖），该帝王作为根节点，保证所有节点都出现在树中。
+// BuildTree 依据父子血脉关系把扁平人物列表组织成世系森林（可能有多个根）。
+// 仅依据 father_id 连接（实线血脉）；无法解析到集合内节点时（如始祖）作为根节点。
 // 内置环检测：若把某节点挂到其后代下会形成环，则退化为根节点，避免死循环。
 func BuildTree(emperors []model.Emperor) []*model.TreeNode {
 	nodes := make(map[int64]*model.TreeNode, len(emperors))
@@ -146,11 +147,6 @@ func BuildTree(emperors []model.Emperor) []*model.TreeNode {
 		if e.FatherID != nil {
 			if p, ok := nodes[*e.FatherID]; ok && p.ID != e.ID {
 				return p, "father"
-			}
-		}
-		if e.LineageID != nil {
-			if p, ok := nodes[*e.LineageID]; ok && p.ID != e.ID {
-				return p, "lineage"
 			}
 		}
 		return nil, ""
@@ -255,15 +251,15 @@ func (r *Repository) DeleteDynasty(id int64) error {
 
 // ============ 写操作：帝王 ============
 
-// CreateEmperor 新增帝王，返回新记录 id。
+// CreateEmperor 新增人物，返回新记录 id。
 func (r *Repository) CreateEmperor(e *model.Emperor) (int64, error) {
 	res, err := r.db.Exec(`
-		INSERT INTO emperor (dynasty_id, name, temple_name, posthumous_name, era_names,
-			father_id, lineage_id, order_index, relation_note,
+		INSERT INTO emperor (dynasty_id, is_emperor, name, temple_name, posthumous_name, era_names,
+			father_id, order_index, relation_note,
 			reign_start, reign_end, birth_year, death_year, description)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		e.DynastyID, e.Name, e.TempleName, e.PosthumousName, e.EraNames,
-		e.FatherID, e.LineageID, e.OrderIndex, e.RelationNote,
+		e.DynastyID, e.IsEmperor, e.Name, e.TempleName, e.PosthumousName, e.EraNames,
+		e.FatherID, e.OrderIndex, e.RelationNote,
 		e.ReignStart, e.ReignEnd, e.BirthYear, e.DeathYear, e.Description)
 	if err != nil {
 		return 0, err
@@ -271,20 +267,20 @@ func (r *Repository) CreateEmperor(e *model.Emperor) (int64, error) {
 	return res.LastInsertId()
 }
 
-// UpdateEmperor 更新帝王全部可编辑字段。
+// UpdateEmperor 更新人物全部可编辑字段。
 func (r *Repository) UpdateEmperor(e *model.Emperor) error {
 	_, err := r.db.Exec(`
-		UPDATE emperor SET dynasty_id=?, name=?, temple_name=?, posthumous_name=?, era_names=?,
-			father_id=?, lineage_id=?, order_index=?, relation_note=?,
+		UPDATE emperor SET dynasty_id=?, is_emperor=?, name=?, temple_name=?, posthumous_name=?, era_names=?,
+			father_id=?, order_index=?, relation_note=?,
 			reign_start=?, reign_end=?, birth_year=?, death_year=?, description=?
 		WHERE id=?`,
-		e.DynastyID, e.Name, e.TempleName, e.PosthumousName, e.EraNames,
-		e.FatherID, e.LineageID, e.OrderIndex, e.RelationNote,
+		e.DynastyID, e.IsEmperor, e.Name, e.TempleName, e.PosthumousName, e.EraNames,
+		e.FatherID, e.OrderIndex, e.RelationNote,
 		e.ReignStart, e.ReignEnd, e.BirthYear, e.DeathYear, e.Description, e.ID)
 	return err
 }
 
-// DeleteEmperor 删除帝王，并把指向它的父系/世系引用置空，使其后代退化为根节点而非悬空。
+// DeleteEmperor 删除人物，并把指向它的父系引用置空，使其后代退化为根节点而非悬空。
 func (r *Repository) DeleteEmperor(id int64) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -293,9 +289,6 @@ func (r *Repository) DeleteEmperor(id int64) error {
 	defer tx.Rollback()
 
 	if _, err := tx.Exec("UPDATE emperor SET father_id=NULL WHERE father_id=?", id); err != nil {
-		return err
-	}
-	if _, err := tx.Exec("UPDATE emperor SET lineage_id=NULL WHERE lineage_id=?", id); err != nil {
 		return err
 	}
 	if _, err := tx.Exec("DELETE FROM emperor WHERE id=?", id); err != nil {

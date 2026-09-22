@@ -11,7 +11,9 @@ const CARD_ZONE = 96 // 轴上/下方留给卡片的固定高度，保证圆点�
 
 /** 按在位顺序排列的横向时间轴，卡片上下交错分布。 */
 export default function Timeline({ emperors, selectedId, onSelect }: Props) {
-  const sorted = [...emperors].sort((a, b) => a.orderIndex - b.orderIndex || a.id - b.id)
+  const sorted = [...emperors]
+    .filter((e) => e.isEmperor !== false)
+    .sort((a, b) => a.orderIndex - b.orderIndex || a.id - b.id)
 
   return (
     <div className="timeline-wrap">
@@ -41,7 +43,7 @@ export default function Timeline({ emperors, selectedId, onSelect }: Props) {
                     justifyContent: 'center',
                   }}
                 >
-                  {above ? card : <div style={{ height: 2, background: '#c9a227', opacity: 0.4 }} />}
+                  {above ? card : <div style={{ height: 2, background: '#8c5a3c', opacity: 0.4 }} />}
                 </div>
                 <div className="tl-dot" />
                 <div
@@ -52,7 +54,7 @@ export default function Timeline({ emperors, selectedId, onSelect }: Props) {
                     justifyContent: 'center',
                   }}
                 >
-                  {!above ? card : <div style={{ height: 2, background: '#c9a227', opacity: 0.4 }} />}
+                  {!above ? card : <div style={{ height: 2, background: '#8c5a3c', opacity: 0.4 }} />}
                 </div>
               </div>
             )

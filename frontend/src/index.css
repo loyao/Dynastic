@@ -1,13 +1,16 @@
 :root {
-  --bg: #0f1115;
-  --panel: #171a21;
-  --panel-2: #1f2430;
-  --border: #2b3140;
-  --text: #e6e8ee;
-  --text-dim: #9aa3b2;
-  --accent: #c9a227;
-  --accent-soft: #e4c766;
-  --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --bg: #f4ecd8;
+  --panel: #fbf6ea;
+  --panel-2: #f1e7d2;
+  --border: #d9c9a8;
+  --text: #3a2f24;
+  --text-dim: #7a6a55;
+  --accent: #8c5a3c; /* 赭石 */
+  --accent-soft: #a9714a;
+  --accent-2: #8b2f2f; /* 暗红 */
+  --on-accent: #fbf6ea;
+  --shadow: 0 6px 20px rgba(90, 70, 40, 0.16);
+  --serif: 'Songti SC', 'STSong', 'SimSun', 'Noto Serif SC', serif;
   font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
 }
 
@@ -23,7 +26,9 @@ body,
 }
 
 body {
-  background: var(--bg);
+  background-color: var(--bg);
+  /* 宣纸纹理：低透明度 SVG 噪点叠加，纯CSS无二进制资源 */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
   color: var(--text);
 }
 
@@ -39,16 +44,17 @@ body {
   align-items: center;
   gap: 16px;
   padding: 14px 24px;
-  background: linear-gradient(90deg, #1a1d25, #12141a);
+  background: linear-gradient(90deg, #f7f0de, #efe3c9);
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
 }
 
 .app-title {
-  font-size: 20px;
+  font-family: var(--serif);
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: 2px;
-  color: var(--accent-soft);
+  letter-spacing: 3px;
+  color: var(--accent-2);
   margin: 0;
   white-space: nowrap;
 }
@@ -84,7 +90,7 @@ body {
 
 .view-toggle button.active {
   background: var(--accent);
-  color: #1a1509;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -118,14 +124,15 @@ body {
 }
 
 .dynasty-chip.active {
-  background: linear-gradient(135deg, #3a2f10, #241d08);
+  background: linear-gradient(135deg, #f0e2c4, #e4d0a6);
   border-color: var(--accent);
-  color: var(--accent-soft);
+  color: var(--accent-2);
 }
 
 .dynasty-chip .name {
-  font-size: 16px;
-  font-weight: 600;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
 }
 
 .dynasty-chip .years {
@@ -142,7 +149,7 @@ body {
 
 .chip-btn {
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(140, 90, 60, 0.08);
   color: var(--text-dim);
   border-radius: 5px;
   width: 22px;
@@ -159,8 +166,8 @@ body {
 }
 
 .chip-btn.danger:hover {
-  color: #ff9a9a;
-  border-color: #ff9a9a;
+  color: var(--accent-2);
+  border-color: var(--accent-2);
 }
 
 /* ---------- 主体布局 ---------- */
@@ -201,9 +208,10 @@ body {
 }
 
 .detail-header .temple {
-  font-size: 24px;
+  font-family: var(--serif);
+  font-size: 25px;
   font-weight: 700;
-  color: var(--accent-soft);
+  color: var(--accent-2);
 }
 
 .detail-header .name {
@@ -212,12 +220,34 @@ body {
   margin-top: 4px;
 }
 
+.role-tag {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.role-tag.emperor {
+  background: rgba(139, 47, 47, 0.1);
+  color: var(--accent-2);
+  border: 1px solid rgba(139, 47, 47, 0.35);
+}
+
+.role-tag.person {
+  background: rgba(122, 106, 85, 0.1);
+  color: var(--text-dim);
+  border: 1px dashed rgba(122, 106, 85, 0.5);
+}
+
 .detail-row {
   display: flex;
   gap: 10px;
   padding: 7px 0;
   font-size: 14px;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+  border-bottom: 1px dashed rgba(140, 90, 60, 0.16);
 }
 
 .detail-row .label {
@@ -243,12 +273,10 @@ body {
 }
 
 /* ---------- 树节点 ---------- */
-.emperor-node {
+.node-card {
+  position: relative;
   padding: 8px 14px;
   border-radius: 10px;
-  border: 2px solid var(--accent);
-  background: linear-gradient(135deg, #262b36, #1a1e27);
-  color: var(--text);
   text-align: center;
   cursor: pointer;
   min-width: 110px;
@@ -256,28 +284,87 @@ body {
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.emperor-node:hover {
+.node-card:hover {
   transform: translateY(-2px);
 }
 
+/* 皇帝：宣纸卡片 + 赭石实线框 */
+.emperor-node {
+  border: 2px solid var(--accent);
+  background: linear-gradient(135deg, #fffaf0, #f6ecd6);
+  color: var(--text);
+}
+
 .emperor-node.selected {
-  border-color: var(--accent-soft);
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.35);
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 3px rgba(139, 47, 47, 0.28);
 }
 
-.emperor-node .n-temple {
-  font-size: 15px;
+/* 宗室·未即位：灰褐虚线框 + 弱化底色 */
+.person-node {
+  border: 2px dashed #a8977c;
+  background: linear-gradient(135deg, #f3ecdb, #e9dfc9);
+  color: var(--text-dim);
+}
+
+.person-node.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(140, 90, 60, 0.25);
+}
+
+.node-badge {
+  position: absolute;
+  top: -9px;
+  right: -6px;
+  background: #b6a68c;
+  color: #fbf6ea;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+.node-card .n-temple {
+  font-family: var(--serif);
+  font-size: 16px;
   font-weight: 700;
-  color: var(--accent-soft);
+  color: var(--accent-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
-.emperor-node .n-name {
+/* 即位序号小圆标（仅皇帝） */
+.node-card .n-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent-2);
+  color: #fbf6ea;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.person-node .n-temple {
+  color: var(--text);
+}
+
+.node-card .n-name {
   font-size: 12px;
   color: var(--text-dim);
   margin-top: 2px;
 }
 
-.emperor-node .n-years {
+.node-card .n-years {
   font-size: 11px;
   color: var(--text-dim);
   margin-top: 3px;
@@ -326,7 +413,7 @@ body {
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid var(--accent);
-  background: var(--panel-2);
+  background: linear-gradient(135deg, #fffaf0, #f6ecd6);
   cursor: pointer;
   text-align: center;
   width: 116px;
@@ -335,14 +422,15 @@ body {
 
 .tl-card:hover,
 .tl-card.selected {
-  border-color: var(--accent-soft);
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.25);
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 3px rgba(139, 47, 47, 0.2);
 }
 
 .tl-card .temple {
-  font-size: 14px;
+  font-family: var(--serif);
+  font-size: 15px;
   font-weight: 700;
-  color: var(--accent-soft);
+  color: var(--accent-2);
 }
 
 .tl-card .name {
@@ -394,7 +482,7 @@ body {
 }
 
 .error-box {
-  color: #ff8a8a;
+  color: var(--accent-2);
   flex-direction: column;
   gap: 12px;
 }
@@ -405,10 +493,49 @@ body {
   left: 16px;
   font-size: 12px;
   color: var(--text-dim);
-  background: rgba(15, 17, 21, 0.7);
+  background: rgba(251, 246, 234, 0.85);
   padding: 4px 10px;
   border-radius: 6px;
   pointer-events: none;
+}
+
+/* ---------- 图谱工具栏（排序 / 导出） ---------- */
+.graph-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 5;
+  background: rgba(251, 246, 234, 0.92);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.graph-toolbar .gt-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.graph-toolbar .gt-sort select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.graph-toolbar .gt-export {
+  padding: 5px 12px;
+  font-size: 12px;
 }
 
 /* ---------- 图谱图例 ---------- */
@@ -421,7 +548,7 @@ body {
   gap: 16px;
   font-size: 12px;
   color: var(--text-dim);
-  background: rgba(15, 17, 21, 0.78);
+  background: rgba(251, 246, 234, 0.9);
   padding: 6px 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -441,12 +568,29 @@ body {
   border-top-width: 2px;
 }
 
-.graph-legend .lg-line.solid {
-  border-top: 2px solid var(--accent);
+.graph-legend .lg-line.blood {
+  border-top: 2px solid #8a6a4f;
 }
 
-.graph-legend .lg-line.dashed {
-  border-top: 2px dashed #8a7bd8;
+.graph-legend .lg-line.succession {
+  border-top: 2px solid #b03a3a;
+}
+
+.graph-legend .lg-box {
+  display: inline-block;
+  width: 14px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.graph-legend .lg-box.emperor {
+  border: 2px solid var(--accent);
+  background: #fffaf0;
+}
+
+.graph-legend .lg-box.person {
+  border: 2px dashed #a8977c;
+  background: #f0e9d8;
 }
 
 .graph-legend .lg-tip {
@@ -471,7 +615,7 @@ body {
 
 .btn.primary {
   background: var(--accent);
-  color: #1a1509;
+  color: var(--on-accent);
   border-color: var(--accent);
   font-weight: 600;
 }
@@ -481,13 +625,13 @@ body {
 }
 
 .btn.danger {
-  color: #ff9a9a;
-  border-color: #5a2b2b;
+  color: var(--accent-2);
+  border-color: rgba(139, 47, 47, 0.4);
 }
 
 .btn.danger:hover {
-  background: #3a1c1c;
-  border-color: #ff9a9a;
+  background: rgba(139, 47, 47, 0.1);
+  border-color: var(--accent-2);
 }
 
 .btn.ghost {
@@ -501,14 +645,14 @@ body {
   border-radius: 10px;
   border: 1px dashed var(--accent);
   background: transparent;
-  color: var(--accent-soft);
+  color: var(--accent);
   cursor: pointer;
   font-size: 14px;
   flex-shrink: 0;
 }
 
 .btn-add-dynasty:hover {
-  background: rgba(201, 162, 39, 0.12);
+  background: rgba(140, 90, 60, 0.12);
 }
 
 .view-toolbar {
@@ -535,7 +679,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(60, 45, 30, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -567,8 +711,9 @@ body {
 
 .modal-head h2 {
   margin: 0;
-  font-size: 17px;
-  color: var(--accent-soft);
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--accent-2);
 }
 
 .modal-close {
@@ -627,10 +772,45 @@ body {
   min-height: 64px;
 }
 
+.field input:disabled,
+.field select:disabled,
+.field textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .field .hint-text {
   font-size: 11px;
   color: var(--text-dim);
-  opacity: 0.7;
+  opacity: 0.75;
+}
+
+/* 身份分段选择器 */
+.seg {
+  display: flex;
+  gap: 4px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.seg-btn {
+  flex: 1;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.seg-btn.active {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
 }
 
 .modal-foot {
@@ -643,10 +823,10 @@ body {
 
 .modal-error {
   grid-column: 1 / -1;
-  color: #ff9a9a;
+  color: var(--accent-2);
   font-size: 13px;
-  background: rgba(90, 43, 43, 0.25);
-  border: 1px solid #5a2b2b;
+  background: rgba(139, 47, 47, 0.08);
+  border: 1px solid rgba(139, 47, 47, 0.35);
   border-radius: 7px;
   padding: 8px 10px;
 }

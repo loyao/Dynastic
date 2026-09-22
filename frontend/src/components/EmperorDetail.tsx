@@ -32,6 +32,7 @@ export default function EmperorDetail({ emperor, onEdit, onDelete }: Props) {
   }
 
   const title = emperor.templeName || emperor.posthumousName || emperor.name
+  const isEmperor = emperor.isEmperor !== false
 
   return (
     <aside className="detail-panel">
@@ -41,13 +42,16 @@ export default function EmperorDetail({ emperor, onEdit, onDelete }: Props) {
           {emperor.name}
           {emperor.dynastyName ? ` · ${emperor.dynastyName}` : ''}
         </div>
+        <div className={isEmperor ? 'role-tag emperor' : 'role-tag person'}>
+          {isEmperor ? '皇帝' : '宗室 · 未即位'}
+        </div>
       </div>
 
       <Row label="庙号" value={emperor.templeName} />
       <Row label="谥号" value={emperor.posthumousName} />
       <Row label="年号" value={emperor.eraNames} />
       <Row label="姓名" value={emperor.name} />
-      <Row label="在位" value={formatRange(emperor.reignStart, emperor.reignEnd)} />
+      {isEmperor ? <Row label="在位" value={formatRange(emperor.reignStart, emperor.reignEnd)} /> : null}
       <Row label="生卒" value={`${formatYear(emperor.birthYear)} — ${formatYear(emperor.deathYear)}`} />
       <Row label="世系" value={emperor.relationNote} />
 

@@ -236,8 +236,8 @@ func (h *Handler) updateEmperor(w http.ResponseWriter, r *http.Request) {
 	if !validateEmperor(w, &e) {
 		return
 	}
-	if e.FatherID != nil && *e.FatherID == id || e.LineageID != nil && *e.LineageID == id {
-		writeError(w, http.StatusBadRequest, "父帝/世系上游不能指向自己")
+	if e.FatherID != nil && *e.FatherID == id {
+		writeError(w, http.StatusBadRequest, "父系不能指向自己")
 		return
 	}
 	if err := h.repo.UpdateEmperor(&e); err != nil {
@@ -259,7 +259,7 @@ func (h *Handler) deleteEmperor(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// validateEmperor 校验帝王写入请求的必要字段。
+// validateEmperor 校验人物写入请求的必要字段。
 func validateEmperor(w http.ResponseWriter, e *model.Emperor) bool {
 	e.Name = strings.TrimSpace(e.Name)
 	if e.DynastyID <= 0 {
@@ -267,8 +267,12 @@ func validateEmperor(w http.ResponseWriter, e *model.Emperor) bool {
 		return false
 	}
 	if e.Name == "" {
-		writeError(w, http.StatusBadRequest, "帝王姓名不能为空")
+		writeError(w, http.StatusBadRequest, "人物姓名不能为空")
 		return false
+	}
+	// 非皇帝人物不参与皇位传承排序，将在位顺序归零。
+	if !e.IsEmperor {
+		e.OrderIndex = 0
 	}
 	return true
 }

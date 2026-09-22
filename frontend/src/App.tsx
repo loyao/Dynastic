@@ -171,7 +171,7 @@ export default function App() {
                 className="btn primary"
                 onClick={() => setEmperorModal({ open: true, editing: null })}
               >
-                ＋ 新增帝王
+                ＋ 新增人物
               </button>
             </div>
           ) : null}

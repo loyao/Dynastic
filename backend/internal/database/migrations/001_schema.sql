@@ -17,14 +17,14 @@ CREATE TABLE IF NOT EXISTS dynasty (
 CREATE TABLE IF NOT EXISTS emperor (
     id              BIGINT       NOT NULL AUTO_INCREMENT,
     dynasty_id      BIGINT       NOT NULL,
+    is_emperor      TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '1=皇帝，0=宗室/未即位祖先',
     name            VARCHAR(64)  NOT NULL COMMENT '姓名',
     temple_name     VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '庙号',
     posthumous_name VARCHAR(128) NOT NULL DEFAULT '' COMMENT '谥号',
     era_names       VARCHAR(255) NOT NULL DEFAULT '' COMMENT '年号',
-    father_id       BIGINT       NULL COMMENT '父帝 id，自引用',
-    lineage_id      BIGINT       NULL COMMENT '世系上游帝王 id：生父非皇帝时，指向最近的帝王祖先（如曾祖），用于绘制隔代/旁系世系连线',
-    order_index     INT          NOT NULL DEFAULT 0 COMMENT '在位顺序',
-    relation_note   VARCHAR(128) NOT NULL DEFAULT '' COMMENT '继位关系说明',
+    father_id       BIGINT       NULL COMMENT '生父 id（可为皇帝或非皇帝祖先），自引用；实线血脉边',
+    order_index     INT          NOT NULL DEFAULT 0 COMMENT '在位顺序（非皇帝为 0）',
+    relation_note   VARCHAR(128) NOT NULL DEFAULT '' COMMENT '继位/世系关系说明',
     reign_start     INT          NULL COMMENT '在位起始年，负数为公元前',
     reign_end       INT          NULL COMMENT '在位结束年',
     birth_year      INT          NULL,
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS emperor (
     description     TEXT         NULL,
     PRIMARY KEY (id),
     KEY idx_emperor_dynasty (dynasty_id),
+    KEY idx_emperor_is_emperor (is_emperor),
     KEY idx_emperor_father (father_id),
-    KEY idx_emperor_lineage (lineage_id),
     KEY idx_emperor_order (dynasty_id, order_index),
     CONSTRAINT fk_emperor_dynasty FOREIGN KEY (dynasty_id) REFERENCES dynasty (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
